@@ -1,0 +1,25 @@
+##### Remove this line and change DEVICE:VALUE to your device and value (BOTH TIMES)
+##### Remove ths line and change the PATH-TO-SCRIPT to your PATH
+
+defmod NotifyScriptShellyEmu notify DEVICE:VALUE.* {\
+  my $p = ReadingsVal("DEVICE","VALUE",0);;\
+  my $lock = "/tmp/shelly_emu.lock";;\
+\
+  # Be sure it is not runing via lock\
+  if (-e $lock) {\
+    return;;\
+  }\
+\
+  # Set lock\
+  open(my $fh, '>', $lock);;\
+  print $fh time();;\
+  close($fh);;\
+\
+  # Start Script\
+  system("/usr/bin/python3 /PATH-TO-SCRIPT/ForFHEM.py.py $p &");;\
+\
+  # Remove Lock\
+  # (damit das Skript beim nächsten echten Event wieder starten darf)\
+  my $cmd = "sleep 2 && rm -f $lock &";;\
+  system($cmd);;\
+}
