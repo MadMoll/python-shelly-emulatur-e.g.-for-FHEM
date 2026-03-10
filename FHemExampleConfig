@@ -16,7 +16,7 @@ Einspeisung:power.* {
   print $fh time();
   close($fh);
 
-  # Python-Skript start power only
+  # Python-Skript start power only OR Shelly PRO
   #system("/usr/bin/python3 /home/scripts/shelly/NoLoopFHEMEmuShellyGen3.py $p &");
   # Python-Skript start all
   #system("/usr/bin/python3 /home/scripts/shelly/NoLoopFHEMEmuShellyGen3All.py $p $tc $tf &");
