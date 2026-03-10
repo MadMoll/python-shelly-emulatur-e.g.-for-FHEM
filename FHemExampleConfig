@@ -1,25 +1,28 @@
-##### Remove this line and change DEVICE:VALUE to your device and value (BOTH TIMES)
-##### Remove ths line and change the PATH-TO-SCRIPT to your PATH
+defmod NotifyScriptShellyEmu notify Einspeisung:power.* {
+Einspeisung:power.* {
+  my $p = ReadingsVal("Einspeisung","power",0);
+  my $tc = ReadingsVal("Einspeisung","total_consumption",0);
+  my $tf = ReadingsVal("Einspeisung","total_feed",0);
 
-defmod NotifyScriptShellyEmu notify DEVICE:VALUE.* {\
-  my $p = ReadingsVal("DEVICE","VALUE",0);;\
-  my $lock = "/tmp/shelly_emu.lock";;\
-\
-  # Be sure it is not runing via lock\
-  if (-e $lock) {\
-    return;;\
-  }\
-\
-  # Set lock\
-  open(my $fh, '>', $lock);;\
-  print $fh time();;\
-  close($fh);;\
-\
-  # Start Script\
-  system("/usr/bin/python3 /PATH-TO-SCRIPT/ForFHEM.py.py $p &");;\
-\
-  # Remove Lock\
-  # (damit das Skript beim nächsten echten Event wieder starten darf)\
-  my $cmd = "sleep 2 && rm -f $lock &";;\
-  system($cmd);;\
+  my $lock = "/tmp/shelly_emu.lock";
+
+  # Wenn Lock existiert → Skript läuft bereits → NICHT starten
+  if (-e $lock) {
+    return;
+  }
+
+  # Lock setzen
+  open(my $fh, '>', $lock);
+  print $fh time();
+  close($fh);
+
+  # Python-Skript start power only
+  #system("/usr/bin/python3 /home/scripts/shelly/NoLoopFHEMEmuShellyGen3.py $p &");
+  # Python-Skript start all
+  #system("/usr/bin/python3 /home/scripts/shelly/NoLoopFHEMEmuShellyGen3All.py $p $tc $tf &");
+
+  # Lock nach kurzer Zeit entfernen
+  # (damit das Skript beim nächsten echten Event wieder starten darf)
+  my $cmd = "sleep 2 && rm -f $lock &";
+  system($cmd);
 }
