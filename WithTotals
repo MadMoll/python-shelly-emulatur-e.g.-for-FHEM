@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+import socket
+import json
+import sys
+
+# ---------------------------------------------------------
+# Settings
+# ---------------------------------------------------------
+UDP_PORT = 2222
+SRC_ID = "shellyemg3-ec4609c439c1"
+
+# ---------------------------------------------------------
+# Values from FHEM arguments
+# ---------------------------------------------------------
+def safe_float(v):
+    try:
+        return float(v)
+    except:
+        return 0.0
+
+try:
+    CURRENT_POWER = safe_float(sys.argv[1])
+except:
+    CURRENT_POWER = 0.0
+
+try:
+    TOTAL_CONSUMPTION = safe_float(sys.argv[2])
+except:
+    TOTAL_CONSUMPTION = 0.0
+
+try:
+    TOTAL_FEED = safe_float(sys.argv[3])
+except:
+    TOTAL_FEED = 0.0
+
+# ---------------------------------------------------------
+# UDP Server (one-shot)
+# ---------------------------------------------------------
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(("0.0.0.0", UDP_PORT))
+sock.settimeout(2.0)
+
+try:
+    data, addr = sock.recvfrom(2048)
+except socket.timeout:
+    sock.close()
+    sys.exit(0)
+
+try:
+    req = json.loads(data.decode("utf-8"))
+except:
+    sock.close()
+    sys.exit(0)
+
+method = req.get("method", "")
+rpc_id = req.get("id", 0)
+
+def send(resp):
+    sock.sendto(json.dumps(resp, separators=(",", ":")).encode("utf-8"), addr)
+
+# ---------------------------------------------------------
+# Responses
+# ---------------------------------------------------------
+if method == "EM1.GetStatus":
+    send({
+        "id": rpc_id,
+        "src": SRC_ID,
+        "dst": "unknown",
+        "result": {
+            "act_power": CURRENT_POWER,
+            "total_act_energy": TOTAL_CONSUMPTION,
+            "total_act_returned": TOTAL_FEED
+        }
+    })
+
+elif method == "Shelly.GetDeviceInfo":
+    send({
+        "id": rpc_id,
+        "src": SRC_ID,
+        "dst": "unknown",
+        "result": {
+            "model": "SPEM-003CEEU",
+            "mac": "XXXXXXXXXXXX",
+            "fw_id": "20240202-123456/v1.0.0",
+            "gen": 3
+        }
+    })
+
+elif method == "Shelly.GetStatus":
+    send({
+        "id": rpc_id,
+        "src": SRC_ID,
+        "dst": "unknown",
+        "result": {
+            "act_power": CURRENT_POWER,
+            "total_act_energy": TOTAL_CONSUMPTION,
+            "total_act_returned": TOTAL_FEED
+        }
+    })
+
+elif method == "Shelly.GetConfig":
+    send({
+        "id": rpc_id,
+        "src": SRC_ID,
+        "dst": "unknown",
+        "result": {}
+    })
+
+sock.close()
