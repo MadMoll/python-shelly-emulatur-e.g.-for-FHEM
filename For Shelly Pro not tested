@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+import socket
+import json
+import sys
+
+UDP_PORT = 1010
+SRC_ID = "ShellyPro3EM-DCA6323598BF"
+
+def safe_float(v):
+    try:
+        return float(v)
+    except:
+        return 0.0
+
+try:
+    TOTAL_POWER = safe_float(sys.argv[1])
+except:
+    TOTAL_POWER = 0.0
+
+# Phase A = gesamte Leistung
+A_POWER = TOTAL_POWER
+# Phase B/C = 0
+B_POWER = 0.0
+C_POWER = 0.0
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(("0.0.0.0", UDP_PORT))
+sock.settimeout(2.0)
+
+try:
+    data, addr = sock.recvfrom(2048)
+except socket.timeout:
+    sock.close()
+    sys.exit(0)
+
+try:
+    req = json.loads(data.decode("utf-8"))
+except:
+    sock.close()
+    sys.exit(0)
+
+method = req.get("method", "")
+rpc_id = req.get("id", 0)
+
+def send(resp):
+    sock.sendto(json.dumps(resp, separators=(",", ":")).encode("utf-8"), addr)
+
+if method == "EM.GetStatus":
+    send({
+        "id": rpc_id,
+        "src": SRC_ID,
+        "result": {
+            "id": 0,
+            "a_current": A_POWER / 230.0,
+            "a_voltage": 230.00,
+            "a_act_power": A_POWER,
+            "a_aprt_power": A_POWER,
+            "a_pf": 1.00,
+            "a_freq": 50.00,
+
+            "b_current": 0.00,
+            "b_voltage": 230.00,
+            "b_act_power": B_POWER,
+            "b_aprt_power": B_POWER,
+            "b_pf": 1.00,
+            "b_freq": 50.00,
+
+            "c_current": 0.00,
+            "c_voltage": 230.00,
+            "c_act_power": C_POWER,
+            "c_aprt_power": C_POWER,
+            "c_pf": 1.00,
+            "c_freq": 50.00,
+
+            "total_current": A_POWER / 230.0,
+            "total_act_power": TOTAL_POWER,
+            "total_aprt_power": TOTAL_POWER
+        }
+    })
+
+sock.close()
